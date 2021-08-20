@@ -2,57 +2,106 @@
 
 const express = require('express');
 
-require('dotenv').config
+const cors = require('cors');
+
+require('dotenv').config();
+
+const axios = require('axios');
 
 const server = express();
 
-const PORT = process.env.PORT;
-
-const witherData = require('./data/weather.json')
-
-
-const cors = require('cors')
-
-const cityData = require('./data/weather.json');
-
 server.use(cors());
 
+const PORT = process.env.PORT;
 
 
-class Forcast {
-    constructor(description, validDate) {
-        this.description = description;
-        this.valid_date = validDate;
-    }
-}
-
-server.get('/getWitherData', (request, response) => {
-    let cityName = request.query.searchQury
-
-    let citylocation = cityData.find(item => {
-        if (item.city_name == cityName) {
-            return item.data
-        }
-    })
-
-    let newArr = []
-
-    citylocation.data.forEach(element => {
-
-        let newObjict = new Forcast(element.weather.description, element.valid_date)
-        newArr.push(newObjict)
-
-    });
-    response.send(witherData)
-})
 
 server.get('/', (request, response) => {
     response.send('HOME ROUT')
-})
+});
+
+
+class Forcast {
+    constructor(obj) {
+        this.description = `Low of ${obj.low_temp}, high of ${obj.max_temp} with ${obj.weather.description}`
+        this.valid_date = obj.valid_date;
+    }
+}
+
+
+// http://localhost:3001/weather?lat=43&lon=42
+server.get('/weather', getWeatherData);
+
+
+async function getWeatherData(req, res) {
+
+    let cityName = req.query.cityName
+    let cityLat = req.query.lat
+    let cityLon = req.query.lon
+    let weatherUrl = `https://api.weatherbit.io/v2.0/forecast/daily?key=${process.env.WITHER_KEY}&lat=${cityLat}&lon=${cityLon}&days=5`;
+
+    try {
+        console.log('hi');
+        let witherData = await axios.get(weatherUrl);
+        let weatherArr = witherData.data.data.map(obj => {
+            return new Forcast(obj);
+        })
+        res.send(weatherArr);
+
+    }
+    catch (error) {
+
+        console.log('error from axios', error);
+        res.send(error)
+
+    }
+
+}
+
+class Moveis {
+    constructor(elem) {
+        this.title = elem.title;
+        this.date = elem.release_date;
+        this.overview = elem.overview;
+        this.vote = elem.vote_count;
+        this.avgVote = elem.vote_average;
+        this.src = `https://image.tmdb.org/t/p/original${elem.poster_path}`;
+    }
+}
+
+
+// http://localhost:3001/movies?cityName=amman
+server.get('/movies', getmoviesData);
+
+
+async function getmoviesData(req, res) {
+
+    let cityName = req.query.cityName
+
+    let moviesUrl = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.MOVIES_KEY}&query=${cityName}&include_adult=false`;
+
+    try {
+        console.log('hello');
+        let  moviesData = await axios.get(moviesUrl);
+        let moviesArr =  moviesData.data.results.map(obj => {
+            return new Moveis(obj);
+        })
+        res.send(moviesArr);
+
+    }
+    catch (error) {
+
+        console.log('error from axios', error);
+        res.send(error)
+
+    }
+
+}
+
+
 
 
 server.get('/test', (request, response) => {
-   console.log('hi');
     response.send('¯\_( ͡❛ ͜ʖ ͡❛)_/¯')
 })
 
