@@ -1,6 +1,7 @@
 const axios = require('axios');
 module.exports = getWeatherData;
 
+let watherObject = {};
 
 async function getWeatherData(req, res) {
 
@@ -9,24 +10,29 @@ async function getWeatherData(req, res) {
     let cityLon = req.query.lon
     let weatherUrl = `https://api.weatherbit.io/v2.0/forecast/daily?key=${process.env.WITHER_KEY}&lat=${cityLat}&lon=${cityLon}&days=5`;
 
-    try {
-        console.log('hi');
-        let witherData = await axios.get(weatherUrl);
-        let weatherArr = witherData.data.data.map(obj => {
-            return new Forcast(obj);
-        })
-        res.send(weatherArr);
+    if (watherObject[cityName] !== undefined) {
+        res.send(watherObject[cityName]);
+    }
+    else {
+        try {
+            console.log('hi');
+            let witherData = await axios.get(weatherUrl);
+            let weatherArr = witherData.data.data.map(obj => {
+                return new Forcast(obj);
+            })
+            watherObject[cityName] = weatherArr;
+            res.send(weatherArr);
+
+        }
+        catch (error) {
+
+            console.log('error from axios', error);
+            res.send(error)
+
+        }
 
     }
-    catch (error) {
-
-        console.log('error from axios', error);
-        res.send(error)
-
-    }
-
 }
-
 
 
 class Forcast {
